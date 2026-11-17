@@ -4,7 +4,7 @@ plugins {
   id("maven-publish")
   id("org.jetbrains.gradle.plugin.idea-ext") version "1.1.7"
   id("eclipse")
-  id("com.gtnewhorizons.retrofuturagradle") version "1.2.5"
+  id("com.gtnewhorizons.retrofuturagradle") version "2.0.6"
 }
 
 apply {
@@ -16,13 +16,7 @@ group = "computer.heather.advancedbackups" // http://maven.apache.org/guides/min
 //archivesBaseName = "AdvancedBackups-forge-1.7.10"
 
 
-// Set the toolchain version to decouple the Java we run Gradle with from the Java used to compile and run the mod
 java {
-  toolchain {
-    languageVersion.set(JavaLanguageVersion.of(8))
-    // Azul covers the most platforms for Java 8 toolchains, crucially including MacOS arm64
-    vendor.set(org.gradle.jvm.toolchain.JvmVendorSpec.AZUL)
-  }
   // Generate sources and javadocs jars when building and publishing
   //withSourcesJar()
   //withJavadocJar()
@@ -65,20 +59,6 @@ tasks.processResources.configure {
   }
 }
 
-// Create a new dependency type for runtime-only dependencies that don't get included in the maven publication
-val runtimeOnlyNonPublishable: Configuration by configurations.creating {
-  description = "Runtime only dependencies that are not published alongside the jar"
-  isCanBeConsumed = false
-  isCanBeResolved = false
-}
-listOf(configurations.runtimeClasspath, configurations.testRuntimeClasspath).forEach {
-  it.configure {
-    extendsFrom(
-      runtimeOnlyNonPublishable
-    )
-  }
-}
-
 // Add an access tranformer
 // tasks.deobfuscateMergedJarToSrg.configure {accessTransformerFiles.from("src/main/resources/META-INF/mymod_at.cfg")}
 
@@ -93,8 +73,7 @@ repositories {
   }
   maven {
     name = "GTNH Maven"
-    url = uri("http://jenkins.usrv.eu:8081/nexus/content/groups/public/")
-    isAllowInsecureProtocol = true
+    url = uri("https://nexus.gtnewhorizons.com/repository/public/")
   }
 }
 
@@ -104,8 +83,6 @@ val extraLibs by configurations.creating
 
 
 dependencies {
-  // Adds NotEnoughItems and its dependencies (CCL&CCC) to runClient/runServer
-  runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.3.39-GTNH:dev")
 
   implementation (files(abCoreLibPath))
   extraLibs (files(abCoreLibPath))
@@ -148,6 +125,8 @@ tasks.withType<Jar> {
         attributes["Implementation-Version"] = "${version}"
     }
 }
+
+listOf("compileJava", "compileInjectedTagsJava").forEach { tasks.named<JavaCompile>(it) { options.release.set(8) } }
 
 tasks.jar {
     archiveBaseName.set("AdvancedBackups-forge-1.7.10")
