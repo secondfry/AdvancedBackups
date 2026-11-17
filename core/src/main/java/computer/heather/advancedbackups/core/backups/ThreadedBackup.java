@@ -42,6 +42,8 @@ public class ThreadedBackup extends Thread {
     private static float completeSize;
     public static volatile boolean running = false;
     public static volatile boolean wasRunning = false;
+    //Stats of the last completed backup, written before its COMPLETE state is published.
+    public static volatile String lastStats = "";
     private static String backupName;
     private Consumer<String> output;
     private boolean snapshot = false;
@@ -83,12 +85,6 @@ public class ThreadedBackup extends Thread {
 
         try {
             this.makeBackup();
-            if (!this.shutdown) {
-                BackupStatusInstance instance = new BackupStatusInstance();
-                instance.setAge(System.currentTimeMillis());
-                instance.setState(BackupStatusInstance.State.COMPLETE);
-                BackupStatusInstance.setInstance(instance);
-            }
         } catch (InterruptedException e) {
             this.output.accept("Backup cancelled!");
             this.performDelete(new File(ABCore.backupPath));
@@ -117,10 +113,17 @@ public class ThreadedBackup extends Thread {
         }
 
         BackupWrapper.finishBackup(this.snapshot);
+        lastStats = this.stats();
+        if (!this.shutdown) {
+            BackupStatusInstance instance = new BackupStatusInstance();
+            instance.setAge(System.currentTimeMillis());
+            instance.setState(BackupStatusInstance.State.COMPLETE);
+            BackupStatusInstance.setInstance(instance);
+        }
         if (this.erroringFiles.isEmpty()) {
-            this.output.accept("Backup complete!" + this.stats());
+            this.output.accept("Backup complete!" + lastStats);
         } else {
-            this.output.accept("Backup completed with errors - the following files could not be backed up." + this.stats());
+            this.output.accept("Backup completed with errors - the following files could not be backed up." + lastStats);
             this.output.accept("Check the logs for more information :");
             for (String string : this.erroringFiles) {
                 this.output.accept(string);

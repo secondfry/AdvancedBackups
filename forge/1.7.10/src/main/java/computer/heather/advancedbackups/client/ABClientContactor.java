@@ -2,14 +2,42 @@ package computer.heather.advancedbackups.client;
 
 
 import computer.heather.advancedbackups.AdvancedBackups;
+import computer.heather.advancedbackups.core.backups.BackupStatusInstance;
 import computer.heather.advancedbackups.interfaces.IClientContactor;
 import computer.heather.advancedbackups.network.NetworkHandler;
 import computer.heather.advancedbackups.network.PacketBackupStatus;
+import cpw.mods.fml.common.Loader;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.management.ServerConfigurationManager;
 
 @SuppressWarnings("unchecked")
 public class ABClientContactor implements IClientContactor {
+
+    private long lastAge = -1;
+    private int lastPercent = -1;
+    private long lastSent = 0;
+
+    @Override
+    public void handle(BackupStatusInstance instance, boolean all) {
+        if (!Loader.isModLoaded("serverutilities")) {
+            IClientContactor.super.handle(instance, all);
+            return;
+        }
+        //BackupTimer re-sends the current instance every tick, so notify once per published instance...
+        long now = System.currentTimeMillis();
+        int percent = -1;
+        if (instance.getState() == BackupStatusInstance.State.STARTED) {
+            percent = (int) ((((float) instance.getProgress()) / ((float) instance.getMax())) * 100F);
+            //...and progress at most every 3s (ServerUtilities' notification lifetime), so chat-mode players are not flooded.
+            if (percent == this.lastPercent || now - this.lastSent < 3000) return;
+        } else if (instance.getAge() == this.lastAge) {
+            return;
+        }
+        this.lastAge = instance.getAge();
+        this.lastPercent = percent;
+        this.lastSent = now;
+        ServerUtilitiesNotifier.notify(instance.getState(), percent, all);
+    }
 
     @Override
     public void backupComplete(boolean all) {

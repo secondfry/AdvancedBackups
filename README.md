@@ -4,6 +4,7 @@ Features this fork has over [upstream](https://github.com/MommyHeather/AdvancedB
 - 1.7.10: the command is `/advbackup`, because ServerUtilities (GTNH) takes `/backup`.
 - 1.7.10: before backing up, waits for queued chunk writes and Hodgepodge's threaded world-data saves, so a backup no longer starts while those writes are in flight.
 - The backup-complete message reports the backup type, its size, the total size of all backups and the free disk space (binary units).
+- 1.7.10: when ServerUtilities is loaded, backup start, progress, completion, failure and cancellation are sent as ServerUtilities `backup` notifications (above the hotbar by default) to the players set by `logging.clients`, in place of Advanced Backups' own client messages.
 
 ---
 

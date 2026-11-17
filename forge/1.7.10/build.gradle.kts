@@ -86,6 +86,7 @@ dependencies {
 
   implementation (files(abCoreLibPath))
   extraLibs (files(abCoreLibPath))
+  compileOnly("com.github.GTNewHorizons:ServerUtilities:2.4.22:dev") { isTransitive = false }
 
   // Example: grab the ic2 jar from curse maven and deobfuscate
   // api(rfg.deobf("curse.maven:ic2-242638:2353971"))
