@@ -26,7 +26,7 @@ public class AdvancedBackupsCommand extends CommandBase
     @Override
     public String getCommandName()
     {
-        return "backup";
+        return "advbackup";
     }
 
 
@@ -38,7 +38,7 @@ public class AdvancedBackupsCommand extends CommandBase
 
     public String getCommandUsage(ICommandSender icommandsender)
     {
-        return "/backup (start|reload-config|reload-client-config|reset-chain|snapshot|cancel)";
+        return "/advbackup (start|reload-config|reload-client-config|reset-chain|snapshot|cancel)";
     }
 
     @Override

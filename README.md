@@ -1,6 +1,7 @@
 ## Fork changes
 Features this fork has over [upstream](https://github.com/MommyHeather/AdvancedBackups):
 - Builds on Gradle 9.9.1 with a modern JDK (25) while still emitting Java 8 bytecode, like GTNH's own mods, so the jar runs on both GTNH server builds (Java 8 and Java 17+).
+- 1.7.10: the command is `/advbackup`, because ServerUtilities (GTNH) takes `/backup`.
 
 ---
 
@@ -76,7 +77,7 @@ Because of the way this "chain" works with incrementals, they purge slightly dif
 ### Ingame:
 \- Upon first boot, an `AdvancedBackups.properties` file will be created in your server or client `config` directory.
 
-\- Adjust this to suit your needs, then restart the server or use `/backup reload-config` in versions 2.2+ or `/advancedbackups reload` in older pre-2.2 versions to reload the config. A small description of each config entry is below.
+\- Adjust this to suit your needs, then restart the server or use `/backup reload-config` in versions 2.2+ (`/advbackup reload-config` on 1.7.10 in this fork) or `/advancedbackups reload` in older pre-2.2 versions to reload the config. A small description of each config entry is below.
 
 <details>
 <summary>config</summary>
@@ -120,9 +121,9 @@ Because of the way this "chain" works with incrementals, they purge slightly dif
 
 #### Commands:
 
-\- All entries in the table below must be prefixed with `/backup` in 2.2+ or `/advancedbackups` in older pre-2.2.
+\- All entries in the table below must be prefixed with `/backup` in 2.2+ (`/advbackup` on 1.7.10 in this fork) or `/advancedbackups` in older pre-2.2.
 
-- Example : `/backup start`
+- Example : `/backup start` (`/advbackup start` on 1.7.10 in this fork)
 
 
 <details>
