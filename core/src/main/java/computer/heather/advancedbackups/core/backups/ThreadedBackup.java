@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -47,6 +48,8 @@ public class ThreadedBackup extends Thread {
     private boolean shutdown = false;
     private ArrayList<String> erroringFiles = new ArrayList<>();
     private String snapshotName = "";
+    private File produced;
+    private String backupType;
 
     public static final ArrayList<Pattern> blacklist = new ArrayList<>();
 
@@ -115,9 +118,9 @@ public class ThreadedBackup extends Thread {
 
         BackupWrapper.finishBackup(this.snapshot);
         if (this.erroringFiles.isEmpty()) {
-            this.output.accept("Backup complete!");
+            this.output.accept("Backup complete!" + this.stats());
         } else {
-            this.output.accept("Backup completed with errors - the following files could not be backed up.");
+            this.output.accept("Backup completed with errors - the following files could not be backed up." + this.stats());
             this.output.accept("Check the logs for more information :");
             for (String string : this.erroringFiles) {
                 this.output.accept(string);
@@ -165,6 +168,8 @@ public class ThreadedBackup extends Thread {
         try {
 
             File zip = new File(file.toString() + (this.snapshot ? "/snapshots/" : "/zips/"), backupName + ".zip");
+            this.produced = zip;
+            this.backupType = this.snapshot ? "snapshot" : "zip";
             ABCore.infoLogger.accept("Preparing " + (this.snapshot ? "snapshot" : "zip") + " backup with name:\n  " + zip.getName().replace("incomplete", this.snapshot ? snapshotName : "backup"));
             this.output.accept("Preparing " + (this.snapshot ? "snapshot" : "zip") + " backup with name:\n  " + zip.getName().replace("incomplete", this.snapshot ? snapshotName : "backup"));
             FileOutputStream outputStream = new FileOutputStream(zip);
@@ -366,6 +371,7 @@ public class ThreadedBackup extends Thread {
             }
 
             backupName += complete ? "-full" : "-partial";
+            this.backupType = (differential ? "differential" : "incremental") + (complete ? " (full)" : " (partial)");
 
 
             //We need to handle interrupts in various styles in different parts of the process!
@@ -379,6 +385,7 @@ public class ThreadedBackup extends Thread {
                 FileOutputStream outputStream = new FileOutputStream(zip);
                 ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream);
                 zipOutputStream.setLevel((int) ConfigManager.compression.get());
+                this.produced = zip;
 
                 int max = toBackup.size();
                 int index = 0;
@@ -441,6 +448,7 @@ public class ThreadedBackup extends Thread {
             } else {
                 File dest = differential ? new File(location.toString() + "/differential/", backupName + "/") : new File(location.toString() + "/incremental/", backupName + "/");
                 dest.mkdirs();
+                this.produced = dest;
                 int max = toBackup.size();
                 int index = 0;
 
@@ -543,6 +551,37 @@ public class ThreadedBackup extends Thread {
         }
     }
 
+
+    private String stats() {
+        //Stats are informational only - never let them fail an otherwise good backup.
+        try {
+            File backup = new File(this.produced.getParentFile(), this.produced.getName().replace("incomplete", this.snapshot ? snapshotName : "backup"));
+            long size = backup.isDirectory() ? BackupWrapper.calculateDirectorySize(backup) : backup.length();
+            String free;
+            try {
+                free = formatSize(Files.getFileStore(new File(ABCore.backupPath).toPath()).getUsableSpace());
+            } catch (IOException e) {
+                free = "unknown";
+            }
+            return " Type: " + this.backupType + ", size: " + formatSize(size)
+                    + ", all backups: " + formatSize(BackupWrapper.calculateDirectorySize(new File(ABCore.backupPath)))
+                    + ", free disk: " + free;
+        } catch (Exception e) {
+            ABCore.logStackTrace(e);
+            return "";
+        }
+    }
+
+    private static String formatSize(long bytes) {
+        String[] units = {"B", "KiB", "MiB", "GiB", "TiB"};
+        double value = bytes;
+        int unit = 0;
+        while (value >= 1024 && unit < units.length - 1) {
+            value /= 1024;
+            unit++;
+        }
+        return String.format(Locale.ROOT, "%.2f %s", value, units[unit]);
+    }
 
     private void performRename(File location) {
         //Renames all incomplete backups to no longer have the incomplete marker. This is only done after a successful backup!
