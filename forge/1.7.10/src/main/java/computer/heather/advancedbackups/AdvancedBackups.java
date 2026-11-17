@@ -5,6 +5,7 @@ import net.minecraft.server.management.ServerConfigurationManager;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.world.MinecraftException;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.ThreadedFileIOBase;
 
 import org.apache.logging.log4j.Logger;
 
@@ -30,6 +31,8 @@ import cpw.mods.fml.relauncher.Side;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
@@ -89,6 +92,7 @@ public class AdvancedBackups
         ABCore.disableSaving = AdvancedBackups::disableSaving;
         ABCore.enableSaving = AdvancedBackups::enableSaving;
         ABCore.saveOnce = AdvancedBackups::saveOnce;
+        ABCore.flushWrites = AdvancedBackups::flushWrites;
 
         ABCore.infoLogger = infoLogger;
         ABCore.warningLogger = warningLogger;
@@ -179,6 +183,68 @@ public class AdvancedBackups
             // TODO Scream at user
             errorLogger.accept("FAILED TO SAVE WORLD!");
             e.printStackTrace();
+        }
+    }
+
+    // saveAllChunks only queues chunk writes, and Hodgepodge queues level.dat & co. on the same IO thread,
+    // so without this the backup thread reads files mid-write. Mirrors ServerUtilities' backup preparation.
+    public static void flushWrites() {
+        try {
+            flushChunkSaves();
+            drainQueuedWrites();
+        } catch (Exception | LinkageError e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            errorLogger.accept("FAILED TO FLUSH QUEUED WORLD WRITES! Backup may miss the latest save.");
+            e.printStackTrace();
+        }
+    }
+
+    private static void flushChunkSaves() throws InterruptedException {
+        // Let the worker finish first: concurrent writers can commit older chunk data last.
+        ThreadedFileIOBase.threadedIOInstance.waitForFinish();
+        for (WorldServer world : server.worldServers) {
+            if (world == null) continue;
+            boolean suspended = world.levelSaving;
+            try {
+                world.levelSaving = false;
+                // Vanilla can remove a loader just after new work is submitted to it. Drain that stranded work too.
+                world.saveChunkData();
+            } finally {
+                world.levelSaving = suspended;
+            }
+        }
+        ThreadedFileIOBase.threadedIOInstance.waitForFinish();
+    }
+
+    private static void drainQueuedWrites() throws Exception {
+        ThreadedFileIOBase.threadedIOInstance.waitForFinish();
+        if (!Loader.isModLoaded("hodgepodge")) return;
+        Class<?> tweaks;
+        try {
+            tweaks = Class.forName("com.mitchej123.hodgepodge.config.TweaksConfig");
+        } catch (ClassNotFoundException e) {
+            return;
+        }
+        try {
+            if (!tweaks.getField("threadedWorldDataSaving").getBoolean(null)) return;
+        } catch (NoSuchFieldException e) {
+            return;
+        }
+        Class<?> saver = Class.forName("com.mitchej123.hodgepodge.util.WorldDataSaver");
+        Method flush;
+        try {
+            flush = saver.getMethod("flush");
+        } catch (NoSuchMethodException e) {
+            warningLogger.accept("Hodgepodge WorldDataSaver has no flush(); queued writes drained, but write failures cannot be confirmed");
+            return;
+        }
+        try {
+            flush.invoke(saver.getField("INSTANCE").get(null));
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception) throw (Exception) cause;
+            if (cause instanceof Error) throw (Error) cause;
+            throw new IllegalStateException(cause);
         }
     }
 

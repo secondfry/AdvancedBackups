@@ -34,6 +34,8 @@ public class ABCore {
     public static Runnable disableSaving;
     public static Runnable enableSaving;
     public static Consumer<Boolean> saveOnce;
+    // Waits for queued world writes before the backup thread reads files; loaders without async IO keep the no-op.
+    public static Runnable flushWrites = () -> {};
 
     public static Runnable resetActivity;
 
@@ -75,6 +77,10 @@ public class ABCore {
     public static void saveOnce() {
         saveOnce.accept(ConfigManager.flush.get());
         infoLogger.accept(saveCompleteMessage);
+    }
+
+    public static void flushWrites() {
+        flushWrites.run();
     }
 
     public static void resetActivity() {

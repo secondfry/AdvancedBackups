@@ -281,6 +281,7 @@ public class BackupWrapper {
                 if (ConfigManager.save.get()) {
                     ABCore.saveOnce();
                 }
+                ABCore.flushWrites();
             }
         } catch (Exception e) {
             ABCore.errorLogger.accept("Error saving or disabling saving!");
@@ -306,6 +307,7 @@ public class BackupWrapper {
         if (ConfigManager.save.get()) {
             ABCore.saveOnce();
         }
+        ABCore.flushWrites();
 
         if (ThreadedBackup.running) {
             ABCore.errorLogger.accept("Backup already running!");

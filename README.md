@@ -2,6 +2,7 @@
 Features this fork has over [upstream](https://github.com/MommyHeather/AdvancedBackups):
 - Builds on Gradle 9.9.1 with a modern JDK (25) while still emitting Java 8 bytecode, like GTNH's own mods, so the jar runs on both GTNH server builds (Java 8 and Java 17+).
 - 1.7.10: the command is `/advbackup`, because ServerUtilities (GTNH) takes `/backup`.
+- 1.7.10: before backing up, waits for queued chunk writes and Hodgepodge's threaded world-data saves, so a backup no longer starts while those writes are in flight.
 
 ---
 
