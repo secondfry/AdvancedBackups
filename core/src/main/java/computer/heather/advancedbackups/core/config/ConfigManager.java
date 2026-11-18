@@ -68,6 +68,7 @@ public class ConfigManager {
     public static final BooleanValue compressChains = new BooleanValue("config.advancedbackups.chains.compress", true, ConfigManager::register);
     public static final BooleanValue smartChains = new BooleanValue("config.advancedbackups.chains.smart", true, ConfigManager::register);
     public static final FloatValue chainsPercent = new FloatValue("config.advancedbackups.chains.maxpercent", 50F, 1F, 100F, ConfigManager::register);
+    public static final FloatValue chainsMaxAge = new FloatValue("config.advancedbackups.chains.maxage", 0F, 0F, 8760F, ConfigManager::register);
     public static final FloatValue size = new FloatValue("config.advancedbackups.purge.size", 50F, 0F, Float.MAX_VALUE, ConfigManager::register);
     public static final LongValue daysToKeep = new LongValue("config.advancedbackups.purge.days", 0L, 0L, Long.MAX_VALUE, ConfigManager::register);
     public static final LongValue backupsToKeep = new LongValue("config.advancedbackups.purge.count", 0L, 0L, Long.MAX_VALUE, ConfigManager::register);

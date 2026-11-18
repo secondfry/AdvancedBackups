@@ -162,3 +162,7 @@ config.advancedbackups.chains.smart
 #What % of a full backup is allowed to be contained in a partial before forcing it into a full backup. Useful for reducing partial backup size.
 #Range : 1-100    #Default : 50
 config.advancedbackups.chains.maxpercent
+
+#How old, in hours, the last full differential backup may get before the next differential backup is forced to be full, starting a new chain. 0 disables this. Differential backups only.
+#Range : 0-8760    #Default : 0
+config.advancedbackups.chains.maxage

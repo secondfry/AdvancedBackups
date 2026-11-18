@@ -5,6 +5,7 @@ Features this fork has over [upstream](https://github.com/MommyHeather/AdvancedB
 - 1.7.10: before backing up, waits for queued chunk writes and Hodgepodge's threaded world-data saves, so a backup no longer starts while those writes are in flight.
 - The backup-complete message reports the backup type, its size, the total size of all backups and the free disk space (binary units).
 - 1.7.10: when ServerUtilities is loaded, backup start, progress, completion, failure and cancellation are sent as ServerUtilities `backup` notifications (above the hotbar by default) to the players set by `logging.clients`, in place of Advanced Backups' own client messages.
+- `chains.maxage` (hours, 0 = off): a differential backup is made full once the last full backup is older than this, so each differential backup builds on a full backup at most about that old (plus one backup interval). Differential backups only.
 
 ---
 
@@ -117,6 +118,7 @@ Because of the way this "chain" works with incrementals, they purge slightly dif
 | config.advancedbackups.chains.compress  | Whether to compress incremental and differential backups into zip files. | true | 0.3 |
 | config.advancedbackups.chains.smart | For differential and incremental backups. Resets the chain length if every file is being backed up. | true | 0.3 |
 | config.advancedbackups.chains.maxpercent | If the size of a partial backup exceeds this % of a full backup's size, a full backup is made instead. | 50 | 2.0
+| config.advancedbackups.chains.maxage | For differential backups only. If the last full backup is older than this many hours, a full backup is made instead. 0 disables it. | 0 | 4.3 (fork) |
 | config.advancedbackups.purge.incremental | For incremental backups only. Enable to allow purging incremental backup chains if the defined storage usage is limit exceeded. | true | 1.0 |
 
 </details>

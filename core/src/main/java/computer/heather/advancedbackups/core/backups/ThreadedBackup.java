@@ -322,7 +322,13 @@ public class ThreadedBackup extends Thread {
             int chain = differential ? manifest.differential.chainLength : manifest.incremental.chainLength;
 
 
-            boolean completeTemp = chain >= ConfigManager.length.get() ? true : false;
+            // Only differential lastBackup marks the last full backup; incremental's is bumped by every partial.
+            long lastFull = manifest.differential.getLastBackup();
+            float maxAge = ConfigManager.chainsMaxAge.get();
+            boolean tooOld = differential && maxAge > 0 && lastFull > 0
+                    && System.currentTimeMillis() - lastFull >= (long) (maxAge * 3600000D);
+
+            boolean completeTemp = chain >= ConfigManager.length.get() || tooOld;
 
             Files.walkFileTree(ABCore.worldDir, new SimpleFileVisitor<Path>() {
                 @Override
